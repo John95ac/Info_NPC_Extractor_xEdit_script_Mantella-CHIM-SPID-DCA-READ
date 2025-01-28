@@ -1,4 +1,4 @@
-# 📜 PASCAL "Info NPC Extractor For SSEEdit Mantella - SPID - READ"
+# 📜 PASCAL "Info NPC Extractor For SSEEdit Mantella - CHIM - SPID - READ"
 
 Script for SSEEdit, with the function to extract information from the NPC and utilize Mantella, SPID, or reading.
 
