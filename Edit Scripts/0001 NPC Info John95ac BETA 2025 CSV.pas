@@ -4,8 +4,8 @@
   Modifications:
   - Generates CSV file with columns for FormID, EditorID, Name, Gender, Location, Race, Voice Type, Class, Factions, Keywords
   - Includes read-only invulnerability detection (no modifications)
-  - Displays cute cat ASCII art at the end
-  - Saves to g:\MO2\overwrite\Edit Scripts\NPC_info_full\ folder with plugin name in filename
+  - Saves to g:\MO2\overwrite\Edit Scripts\ Or directly in the folder where you installed this script in your mod list.
+  - NPC_Extracted_Info.csv
   
   Author: Based on JOHN95AC with improvements and kitties
 }
@@ -13,7 +13,7 @@
 unit UserScript;
 
 uses
-  SysUtils, Classes, Contnrs;
+  SysUtils, Classes, Contnrs, Forms, StdCtrls, ExtCtrls;
 
 var
   NPCCount: integer;
@@ -45,6 +45,7 @@ begin
   SeenNPCs.Duplicates := dupIgnore;
   // CSV header
   OutIni.Add('FormID,EditorID,Name,Gender,Location,Race,Voice Type,Class,Factions,Keywords');
+  AddMessage('FormID,EditorID,Name,Gender,Location,Race,Voice Type,Class,Factions,Keywords');
   Result := 0;
 end;
 
@@ -435,9 +436,7 @@ begin
   if Signature = 'NPC_' then
   begin
     FormID := GetEditValue(ElementByPath(e, 'Record Header\FormID'));
-    // Keep plugin name for INI naming (first time only)
-    if PluginName = '' then
-      PluginName := ChangeFileExt(GetFileName(GetFile(e)), '');
+    // PluginName no longer needed
 
     // Deduplicate base NPCs by normalized FormID (shared key with ACHR branch)
     if SeenNPCs.IndexOf('BASE|' + FormatFormIdToXX(FormID)) >= 0 then
@@ -461,37 +460,6 @@ begin
     Keywords := GetKeywords(e);
     LocationField := 'Unknown (Unknown)';   
 
-    // Display organized information
-    if Signature <> LastSignature then
-    begin
-      AddMessage('===================================================');
-      AddMessage('               NPC PROCESSING REPORT               ');
-      AddMessage('===================================================');
-      AddMessage('');
-    end;
-
-    AddMessage(Format('NPC #%d: %s', [NPCCount + 1, Name]));
-    AddMessage('---------------------------------------------------');
-    AddMessage('BASIC INFORMATION:');
-    AddMessage(Format('  FormID:    %s', [FormatFormIdToXX(FormID)]));
-    AddMessage(Format('  EditorID:  %s', [EditorID]));
-    AddMessage(Format('  Gender:    %s', [Gender]));
-    
-    AddMessage('CHARACTER DETAILS:');
-    AddMessage(Format('  Location:  %s', [LocationField]));
-    AddMessage(Format('  Race:      %s', [Race]));
-    AddMessage(Format('  Class:     %s', [ClassData]));
-    AddMessage(Format('  Voice:     %s', [VoiceType]));
-    
-    AddMessage('FACTIONS:');
-    AddMessage(Factions);
-    
-    AddMessage('KEYWORDS:');
-    AddMessage(Keywords);
-    
-    AddMessage('---------------------------------------------------');
-    AddMessage('');
-
     // Build CSV row
     factionsJoined := JoinLinesWithSemicolons(Factions);
     keywordsJoined := JoinLinesWithSemicolons(Keywords);
@@ -507,6 +475,7 @@ begin
            CsvEscape(factionsJoined) + ',' +
            CsvEscape(keywordsJoined);
     OutIni.Add(row);
+    AddMessage(row);
     
     // No invulnerability toggling to avoid freezes
 
@@ -557,36 +526,6 @@ begin
 
     LocationField := GetLocationForRef(e);
 
-    if Signature <> LastSignature then
-    begin
-      AddMessage('===================================================');
-      AddMessage('               NPC PROCESSING REPORT               ');
-      AddMessage('===================================================');
-      AddMessage('');
-    end;
-
-    AddMessage(Format('NPC #%d: %s', [NPCCount + 1, Name]));
-    AddMessage('---------------------------------------------------');
-    AddMessage('BASIC INFORMATION:');
-    AddMessage(Format('  FormID:    %s', [FormatFormIdToXX(FormID)]));
-    AddMessage(Format('  EditorID:  %s', [EditorID]));
-    AddMessage(Format('  Gender:    %s', [Gender]));
-
-    AddMessage('CHARACTER DETAILS:');
-    AddMessage(Format('  Location:  %s', [LocationField]));
-    AddMessage(Format('  Race:      %s', [Race]));
-    AddMessage(Format('  Class:     %s', [ClassData]));
-    AddMessage(Format('  Voice:     %s', [VoiceType]));
-
-    AddMessage('FACTIONS:');
-    AddMessage(Factions);
-
-    AddMessage('KEYWORDS:');
-    AddMessage(Keywords);
-
-    AddMessage('---------------------------------------------------');
-    AddMessage('');
-
     // Build CSV row
     factionsJoined := JoinLinesWithSemicolons(Factions);
     keywordsJoined := JoinLinesWithSemicolons(Keywords);
@@ -602,6 +541,7 @@ begin
            CsvEscape(factionsJoined) + ',' +
            CsvEscape(keywordsJoined);
     OutIni.Add(row);
+    AddMessage(row);
 
     Inc(NPCCount);
     LastSignature := Signature;
@@ -617,6 +557,11 @@ end;
 function Finalize: integer;
 var
   OutputDir, OutputPath: string;
+  frm: TForm;
+  img: TImage;
+  lbl: TLabel;
+  btn: TButton;
+  imgPath: string;
 begin
   AddMessage('===================================================');
   AddMessage('                 PROCESSING SUMMARY                ');
@@ -628,18 +573,65 @@ begin
   AddMessage('Saving CSV...');
   
   // Save CSV
-  if PluginName = '' then
-    PluginName := 'Selection';
-  OutputDir := 'g:\MO2\overwrite\Edit Scripts\NPC_info_full\';
-  if not DirectoryExists(OutputDir) then
-    CreateDir(OutputDir);
-  OutputPath := OutputDir + PluginName + '_NPC_Info.csv';
+  OutputPath := 'NPC_Extracted_Info.csv';
   try
     OutIni.SaveToFile(OutputPath);
     AddMessage(Format('CSV saved to "%s"', [OutputPath]));
   except
     on ex: Exception do
       AddMessage('Failed to save CSV: ' + ex.Message);
+  end;
+
+  // Show completion dialog
+  frm := TForm.Create(nil);
+  try
+    frm.Caption := 'Extraction Completed';
+    frm.Width := 420;
+    frm.Height := 560;
+    frm.Position := poScreenCenter;
+
+    // Image
+    img := TImage.Create(frm);
+    img.Parent := frm;
+    img.Left := 25;
+    img.Top := 20;
+    img.Width := 320;
+    img.Height := 280;
+    img.Stretch := True;
+    imgPath := ProgramPath + 'Edit Scripts\001_3D.png';
+    if FileExists(imgPath) then
+      img.Picture.LoadFromFile(imgPath)
+    else
+      AddMessage('Image not found: ' + imgPath);
+
+    // Message Label
+    lbl := TLabel.Create(frm);
+    lbl.Parent := frm;
+    lbl.Caption := 'The data extraction has been successfully completed.' + #13#10 +
+                   'You can now review the results in the same folder where this script is located.' + #13#10 +
+                   'The file "NPC_Extracted_Info.csv" has been generated.';
+    lbl.Left := 25;
+    lbl.Top := 320;
+    lbl.Width := 370;
+    lbl.Height := 80;
+    lbl.WordWrap := True;
+    lbl.Font.Name := 'Segoe UI';
+    lbl.Font.Size := 10;
+    lbl.AutoSize := False;
+
+    // Close Button
+    btn := TButton.Create(frm);
+    btn.Parent := frm;
+    btn.Caption := 'Close';
+    btn.Left := 150;
+    btn.Top := 450;
+    btn.Width := 120;
+    btn.Height := 36;
+    btn.ModalResult := mrOk;
+
+    frm.ShowModal;
+  finally
+    frm.Free;
   end;
 
   OriginallyInvulnerableNPCs.Free;

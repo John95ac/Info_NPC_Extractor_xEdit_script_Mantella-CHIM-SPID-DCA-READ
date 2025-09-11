@@ -1,19 +1,19 @@
 {
-  Gets detailed NPC information from ESP/ESM files for Mantella/SPID/CHIM/OPDC/READ integration
-  Combines functionality of John95AC scripts with structured INI output
+  Gets detailed NPC information from ESP/ESM files for Mantella/SPID integration
+  Combines functionality of John95AC scripts with INI output
   Modifications:
-  - Generates INI file with sections for each NPC including basic info, character details, factions, keywords
+  - Generates INI file with columns for FormID, EditorID, Name, Gender, Location, Race, Voice Type, Class, Factions, Keywords
   - Includes read-only invulnerability detection (no modifications)
-  - Displays cute cat ASCII art at the end
-  - Saves to ScriptsPath + NPC_info_report folder with plugin name in filename
-  
+  - Saves to g:\MO2\overwrite\Edit Scripts\ Or directly in the folder where you installed this script in your mod list.
+  - NPC_Extracted_Info.ini
+
   Author: Based on JOHN95AC with improvements and kitties
 }
 
 unit UserScript;
 
 uses
-  SysUtils, Classes, Contnrs;
+  SysUtils, Classes, Contnrs, Forms, StdCtrls, ExtCtrls;
 
 var
   NPCCount: integer;
@@ -22,7 +22,7 @@ var
   LastSignature: string;
   OriginallyInvulnerableNPCs: TStringList;
   HasInvulnerableNPCs: boolean;
-  OutIni: TStringList;
+  OutIni: TStringList; // reuse as INI accumulator
   PluginName: string;
   SeenNPCs: TStringList; // to avoid duplicate NPC_ outputs
 
@@ -44,6 +44,46 @@ begin
   SeenNPCs.Sorted := True;
   SeenNPCs.Duplicates := dupIgnore;
   Result := 0;
+end;
+
+// ================================================================
+// INI HELPER FUNCTIONS (GLOBAL)
+// ================================================================
+
+function CsvEscape(const s: string): string;
+var
+  t: string;
+begin
+  t := StringReplace(s, '"', '""', [rfReplaceAll]);
+  if (Pos(',', t) > 0) or (Pos(';', t) > 0) or (Pos('"', s) > 0) or (Pos(#10, t) > 0) or (Pos(#13, t) > 0) then
+    Result := '"' + t + '"'
+  else
+    Result := t;
+end;
+
+function JoinLinesWithSemicolons(const text: string): string;
+var
+  sl: TStringList;
+  i: Integer;
+  item: string;
+begin
+  sl := TStringList.Create;
+  try
+    sl.Text := text;
+    Result := '';
+    for i := 0 to sl.Count - 1 do
+    begin
+      item := Trim(sl[i]);
+      if item = '' then Continue;
+      while (Length(item) > 0) and (item[1] = '-') do
+        Delete(item, 1, 1);
+      item := Trim(item);
+      if Result <> '' then Result := Result + '; ';
+      Result := Result + item;
+    end;
+  finally
+    sl.Free;
+  end;
 end;
 
 // ================================================================
@@ -386,15 +426,14 @@ var
   tmp: TStringList;
   i, k: Integer;
   baseRec: IInterface;
+  factionsJoined, keywordsJoined, row: string;
 begin
   Signature := GetElementEditValues(e, 'Record Header\Signature');
 
   if Signature = 'NPC_' then
   begin
     FormID := GetEditValue(ElementByPath(e, 'Record Header\FormID'));
-    // Keep plugin name for INI naming (first time only)
-    if PluginName = '' then
-      PluginName := ChangeFileExt(GetFileName(GetFile(e)), '');
+    // PluginName no longer needed
 
     // Deduplicate base NPCs by normalized FormID (shared key with ACHR branch)
     if SeenNPCs.IndexOf('BASE|' + FormatFormIdToXX(FormID)) >= 0 then
@@ -416,7 +455,7 @@ begin
     ClassData := TransformBracketedIds(GetClass(e));
     Factions := GetFactions(e);
     Keywords := GetKeywords(e);
-    LocationField := 'Unknown (Unknown)';   
+    LocationField := 'Unknown (Unknown)';
 
     // Display organized information
     if Signature <> LastSignature then
@@ -633,7 +672,12 @@ end;
 
 function Finalize: integer;
 var
-  OutputDir, OutputPath: string;
+  OutputPath: string;
+  frm: TForm;
+  img: TImage;
+  lbl: TLabel;
+  btn: TButton;
+  imgPath: string;
 begin
   AddMessage('===================================================');
   AddMessage('                 PROCESSING SUMMARY                ');
@@ -641,25 +685,12 @@ begin
   AddMessage('');
   AddMessage(Format('Total NPCs processed:         %d', [NPCCount]));
   AddMessage(Format('Invulnerable NPCs found:      %d', [InvulnerableCount]));
-  
   AddMessage('');
-  AddMessage('===================================================');
-  AddMessage('');
-  AddMessage('  /\_/\           ');
-  AddMessage(' ( o.o )          ');
-  AddMessage('  > ^ <           ');
-  AddMessage('Script completed with kitty!');
-  AddMessage('===================================================');
+  AddMessage('Saving INI...');
   
-  // Save INI with all data printed
-  if PluginName = '' then
-    PluginName := 'Selection';
-  OutputDir := ScriptsPath + 'NPC_info_report\';
-  if not DirectoryExists(OutputDir) then
-    CreateDir(OutputDir);
   // Prepend header requested by user at the very top of the INI
   OutIni.Insert(0, '-----------------------------------------------------------------------------------------');
-  OutIni.Insert(0, '[00:00] Start: Applying script "Mantella - SPID - CHIM - READ - Info NPC Extractor FULL"');
+  OutIni.Insert(0, '[00:00] Start: Applying script "Mantella - SPID - CHIM - DCA - READ - Info NPC Extractor FULL"');
   // Blank line after header block
   OutIni.Insert(2, '');
   // Add summary section at the end
@@ -689,13 +720,67 @@ begin
   OutIni.Add('Script completed with kitty!');
   OutIni.Add('===================================================');
   OutIni.Add('');
-  OutputPath := OutputDir + PluginName + '_NPC_Info.ini';
+  
+  // Save INI
+  OutputPath := 'NPC_Extracted_Info.ini';
   try
     OutIni.SaveToFile(OutputPath);
     AddMessage(Format('INI saved to "%s"', [OutputPath]));
   except
     on ex: Exception do
       AddMessage('Failed to save INI: ' + ex.Message);
+  end;
+
+  // Show completion dialog
+  frm := TForm.Create(nil);
+  try
+    frm.Caption := 'Extraction Completed';
+    frm.Width := 420;
+    frm.Height := 560;
+    frm.Position := poScreenCenter;
+
+    // Image
+    img := TImage.Create(frm);
+    img.Parent := frm;
+    img.Left := 25;
+    img.Top := 20;
+    img.Width := 320;
+    img.Height := 280;
+    img.Stretch := True;
+    imgPath := ProgramPath + 'Edit Scripts\001_3D.png';
+    if FileExists(imgPath) then
+      img.Picture.LoadFromFile(imgPath)
+    else
+      AddMessage('Image not found: ' + imgPath);
+
+    // Message Label
+    lbl := TLabel.Create(frm);
+    lbl.Parent := frm;
+    lbl.Caption := 'The data extraction has been successfully completed.' + #13#10 +
+                   'You can now review the results in the same folder where this script is located.' + #13#10 +
+                   'The file "NPC_Extracted_Info.ini" has been generated.';
+    lbl.Left := 25;
+    lbl.Top := 320;
+    lbl.Width := 370;
+    lbl.Height := 80;
+    lbl.WordWrap := True;
+    lbl.Font.Name := 'Segoe UI';
+    lbl.Font.Size := 10;
+    lbl.AutoSize := False;
+
+    // Close Button
+    btn := TButton.Create(frm);
+    btn.Parent := frm;
+    btn.Caption := 'Close';
+    btn.Left := 150;
+    btn.Top := 450;
+    btn.Width := 120;
+    btn.Height := 36;
+    btn.ModalResult := mrOk;
+
+    frm.ShowModal;
+  finally
+    frm.Free;
   end;
 
   OriginallyInvulnerableNPCs.Free;
