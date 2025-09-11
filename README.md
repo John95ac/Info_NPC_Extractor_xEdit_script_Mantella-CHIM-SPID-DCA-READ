@@ -1,26 +1,86 @@
-# 📜 PASCAL "Info NPC Extractor For SSEEdit Mantella - CHIM - SPID - READ"
+# 📜 PASCAL "Info NPC Extractor xEdit script Mantella - CHIM - SPID - DCA - READ"
 
-Script for SSEEdit, with the function to extract information from the NPC and utilize Mantella, SPID, or reading.
+Script for SSEEdit, with the function to extract information from the NPC and utilize Mantella - CHIM - SPID - DCA or Reading.
 
 ---
 
 # What does it do?
 
-they are 3 scripts for ssedti, which help with the extraction and management of information about the npc from different esp plugins, this allows you to have relevant data at hand to create elements in SPID, Mantella Adding NPCs Back History NG, or for whatever you deem convenient,
+#### NPC Info John95ac INI
 
-inside there are 3 scripts, when running the "Info NPC Extractor FULL.pas" you will obtain information from each npc of the plugin or if you selected various plugins at the base, this will show the following,
+Similar to the previous one, but generates a structured INI file with sections per NPC ([NPC_# = Name]), subsections (BASIC INFORMATION, CHARACTER DETAILS, FACTIONS, KEYWORDS), and a summary at the end. More readable for humans or parsing. Includes detailed logging in xEdit. Output: NPC_Extracted_Info.ini
 
-[![notepad-z-ANz-W7z-Efq.png](https://i.postimg.cc/XN9hxLD0/notepad-z-ANz-W7z-Efq.png)](https://postimg.cc/kDXfgQmj)
+Example NPC_Extracted_Info.ini
 
-the script "Info NPC Extractor LITE.pas" will do the same but deliver less information to avoid having too many elements in management,
+```ini
+[00:00] Start: Applying script "Mantella - SPID - CHIM - DCA - READ - Info NPC Extractor FULL"
 
-[![notepad-Knr2wu-Z6-Vz.png](https://i.postimg.cc/85Q46QGf/notepad-Knr2wu-Z6-Vz.png)](https://postimg.cc/DW6L9N87)
+-----------------------------------------------------------------------------------------
 
-and the third is simply a script that deactivates the selected mod's NPCs with the invulnerability tag, this is because if one of the two previous scripts failed, or only damaged some of the NPCs and not all, you have to apply the deactivation of the invulnerable ones to run the script, after having the information you just have to exit without saving, it is a very particular case but it happens, the order itself the mod does not allow to have all the NPCs with information and presents some error in the console, apply the script "Info NPC Extractor Invulnerable Gone ESP.pas" and then any of the other two previous ones and you will get all the info of the mod, then exit without saving
+[NPC_1 = Dragonborn]
+BASIC INFORMATION:
+  Name=Dragonborn
+  FormIDXX=XX000800
+  EditorID=Player
+  Gender=Male
+
+CHARACTER DETAILS:
+  Location=Whiterun (WhiterunExterior01)
+  Race=Nord
+  Class=Dragonborn
+  Voice=NPCMaleNord
+
+FACTIONS:
+  Faction1=No factions
+
+KEYWORDS:
+  Keyword1=ActorTypeNPC
+  Keyword2=No Keywords
+
+[Summary]
+TotalNPCs=1
+TemporaryInvulnRemovals=0
+InvulnerableCount=0
+
+---------------------------------------------------
+===================================================
+                 PROCESSING SUMMARY                
+===================================================
+Total NPCs processed:         1
+Invulnerable NPCs found:      0
+===================================================
+  /\_/\           
+ ( o.o )         
+  > ^ <           
+Script completed with kitty!
+===================================================
+```
+
+#### NPC Info John95ac CSV
+
+This script extracts detailed NPC information (NPC_ and ACHR records) from ESP/ESM files, focused on Mantella/SPID integration. It generates a tabular CSV file with columns: FormID (normalized), EditorID, Name, Gender, Location, Race, Voice Type, Class, Factions (joined by ';'), Keywords (joined by ';'). Includes invulnerability detection (count only, no modifications). Deduplicates NPCs to avoid repetitions. Output: NPC_Extracted_Info.csv
+
+Example NPC_Extracted_Info.csv
+
+```csv
+FormID,EditorID,Name,Gender,Location,Race,Voice Type,Class,Factions,Keywords
+XX000800,Player,Dragonborn,Male,Whiterun (WhiterunExterior01),Nord,NPCMaleNord,Dragonborn,"No factions","ActorTypeNPC; No Keywords"
+```
+
+#### At the end of a process
+
+<table>
+<tr>
+<td><img src="Edit Scripts/001_3D.png" width="100" height="100" alt="001_3D"></td>
+<td>If this image appears in the completion dialog, it means the script was executed successfully.</td>
+</tr>
+</table>
 
 # Acknowledgements
 
 to all those who use the Mantella Adding NPCs Back History NG mod and its SKSE plugin, this is for you and for me, so you can get the information faster and also help in SPID and more things,
+
+many thanks to **Papitas**, for his work on the Pascal [**Get RefIds - xEdit script**](https://www.nexusmods.com/skyrimspecialedition/mods/87787). The way he creates the CSV seemed fascinating to me, but it gave me problems with NPCs categorized as invulnerable, so I created a modified version of my script from INI to CSV inspired by his, many thanks, really Pascal is not my coding style, and with some reverse engineering I managed to understand many things about Pascal.
 
 # Requirements
 
