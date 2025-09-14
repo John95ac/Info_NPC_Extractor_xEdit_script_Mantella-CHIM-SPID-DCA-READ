@@ -8,7 +8,7 @@ Script for SSEEdit, with the function to extract information from the NPC and ut
 
 #### NPC Info John95ac INI
 
-Similar to the previous one, but generates a structured INI file with sections per NPC ([NPC_# = Name]), subsections (BASIC INFORMATION, CHARACTER DETAILS, FACTIONS, KEYWORDS), and a summary at the end. More readable for humans or parsing. Includes detailed logging in xEdit. Output: NPC_Extracted_Info.ini
+Generates a structured INI file with sections per NPC ([NPC_# = Name]), subsections (BASIC INFORMATION, CHARACTER DETAILS, FACTIONS, KEYWORDS), and a summary at the end. More readable for humans or parsing. Includes detailed logging in xEdit. Output: NPC_Extracted_Info.ini
 
 Example NPC_Extracted_Info.ini
 
